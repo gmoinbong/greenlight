@@ -175,7 +175,7 @@ func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
 
 	query := `
-	SELECT users.id, users.created_at, users.email, users.password_hash, users.activated, users.version
+	SELECT users.id, users.created_at, users.name, users.email, users.password_hash, users.activated, users.version
 	FROM users
 	INNER JOIN tokens
 	ON users.id = tokens.user_id
@@ -193,6 +193,8 @@ func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(
 		&user.ID,
 		&user.CreatedAt,
+
+		&user.Name,
 		&user.Email,
 		&user.Password.hash,
 		&user.Activated,
