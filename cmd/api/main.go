@@ -19,9 +19,12 @@ import (
 	"greenlight.gmoinbong/internal/data"
 	"greenlight.gmoinbong/internal/env"
 	"greenlight.gmoinbong/internal/mailer"
+	"greenlight.gmoinbong/internal/vcs"
 )
 
-const version = "1.0.0"
+var (
+	version = vcs.Version()
+)
 
 type config struct {
 	port int
