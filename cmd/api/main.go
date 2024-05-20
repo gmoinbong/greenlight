@@ -25,7 +25,7 @@ import (
 var (
 	version = vcs.Version()
 )
-                  
+
 type config struct {
 	port int
 	env  string
@@ -49,6 +49,9 @@ type config struct {
 	}
 	cors struct {
 		trustedOrigins []string
+	}
+	jwt struct {
+		secret string
 	}
 }
 
@@ -83,6 +86,8 @@ func main() {
 	flag.StringVar(&cfg.smtp.username, "smtp-username", "9f9482daf2eeac", "SMTP username")
 	flag.StringVar(&cfg.smtp.password, "smtp-password", "75753674f0acc2", "SMTP password")
 	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Greenlight <no-reply@greenlight.gmoinbong>", "SMTP sender")
+
+	flag.StringVar(&cfg.jwt.secret, "jwt-secret", "", "JWT secret")
 
 	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(val string) error {
 		cfg.cors.trustedOrigins = strings.Fields(val)

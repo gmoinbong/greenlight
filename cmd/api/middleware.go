@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/pascaldekloe/jwt"
 	"golang.org/x/time/rate"
 	"greenlight.gmoinbong/internal/data"
-	"greenlight.gmoinbong/internal/validator"
 )
 
 func (app *application) recoverPanic(next http.Handler) http.Handler {
@@ -97,23 +98,44 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 
 		headersParts := strings.Split(authorizationHeader, " ")
 		if len(headersParts) != 2 || headersParts[0] != "Bearer" {
-			app.invalidCredentialsResponse(w, r)
+			app.invalidAuthenticationTokenResponse(w, r)
 			return
 		}
 
 		token := headersParts[1]
 
-		v := validator.New()
-		if data.ValidateTokenPlaintext(v, token); !v.Valid() {
-			app.invalidCredentialsResponse(w, r)
+		claims, err := jwt.HMACCheck([]byte(token), []byte(app.config.jwt.secret))
+		if err != nil {
+			app.invalidAuthenticationTokenResponse(w, r)
 			return
 		}
 
-		user, err := app.models.Users.GetForToken(data.ScopeAuthentication, token)
+		if !claims.Valid(time.Now()) {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		if claims.Issuer != "greenlight.gmoinbong" {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		if !claims.AcceptAudience("greenlight.gmoinbong") {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		userID, err := strconv.ParseInt(claims.Subject, 10, 64)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		user, err := app.models.Users.Get(userID)
 		if err != nil {
 			switch {
 			case errors.Is(err, data.ErrRecordNotFound):
-				app.invalidCredentialsResponse(w, r)
+				app.invalidAuthenticationTokenResponse(w, r)
 			default:
 				app.serverErrorResponse(w, r, err)
 			}

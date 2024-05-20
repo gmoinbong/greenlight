@@ -1,3 +1,5 @@
+include .envrc
+
 docker-run:
 	@if docker compose up 2>/dev/null; then \
 		: ; \
@@ -27,7 +29,7 @@ help:
 .PHONY: run/api
 run/api:
 	@make docker-run &
-	@cd cmd/api && go run .
+	@cd cmd/api && go run . -jwt-secret=${JWT_SECRET}
 
 ## db/psql: connect to the database using psql
 .PHONY: db/psql
@@ -59,6 +61,14 @@ audit:
 	staticcheck ./...
 	@echo 'Running tests...'
 	go test -race -vet=off ./...
+## vendor: tidy and vendor dependencies
+.PHONY: vendor
+vendor:
+	@echo 'Tidying and verifying module dependencies...'
+	go mod tidy
+	go mod verify
+	@echo 'Vendoring dependencies...'
+	go mod vendor
 # ==================================================================================== #
 # BUILD
 # ==================================================================================== #
